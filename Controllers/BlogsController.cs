@@ -15,10 +15,30 @@ namespace BlogMVC.Controllers
         }
 
         // GET: Blogs
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, string blogCate, int? pageNumber)
         {
-            var blogContext = _context.Blogs.Include(b => b.Category);
-            return View(await blogContext.ToListAsync());
+            IQueryable<string> cateQuery = from b in _context.Blogs orderby b.CategoryId select b.Category.name;
+            var blogs = from b in _context.Blogs select b;
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                blogs = blogs.Where(s => s.Title!.Contains(searchString));
+                pageNumber = 1;
+            }
+
+            if (!string.IsNullOrEmpty(blogCate))
+            {
+                blogs = blogs.Where(b => b.Category.name == blogCate);
+
+            }
+            int pageSize = 2;
+            var BlogCateVM = new BlogCategoryViewModel
+            {
+                categories = new SelectList(await cateQuery.Distinct().ToListAsync()),
+                blogs = await blogs.ToListAsync(),
+            };
+            var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
+            return View(PagedList);
         }
 
         // GET: Blogs/Details/5
@@ -77,7 +97,7 @@ namespace BlogMVC.Controllers
             {
                 return NotFound();
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Id", blog.CategoryId);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "name", blog.CategoryId);
             return View(blog);
         }
 
@@ -93,28 +113,26 @@ namespace BlogMVC.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+
+            try
             {
-                try
-                {
-                    _context.Update(blog);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BlogExists(blog.BlogID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                _context.Entry(blog).State = EntityState.Modified;
+                _context.Update(blog);
+                await _context.SaveChangesAsync();
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Id", blog.CategoryId);
-            return View(blog);
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!BlogExists(blog.BlogID))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Index));
+
         }
 
         // GET: Blogs/Delete/5

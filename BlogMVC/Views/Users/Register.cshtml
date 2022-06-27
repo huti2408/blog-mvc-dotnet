@@ -1,0 +1,42 @@
+﻿@model BlogMVC.Models.User
+
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/Auth.cshtml";
+}
+
+<div class="m-auto ">
+
+<form action="Register" class="d-flex flex-column align-items-center justify-content-center p-5 bg-light" style="border:1px solid #ccc; border-radius:10px; width:600px">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <h2>Register</h2>
+    <div class="d-flex align-items-center mt-3">
+        <label style="width:100px" class="me-1">Username:</label>
+        <input type="text" asp-for="Username" class="form-control" style="width:auto" />
+        <span asp-validation-for="Username" class="text-danger"></span>
+    </div>
+    <div class="d-flex align-items-center mt-3">
+        <label style="width:100px" class="me-1">Name:</label>
+        <input type="text" asp-for="Name" class="form-control" style="width:auto" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="d-flex align-items-center mt-3">
+        <label style="width:100px" class="me-1">Password:</label>
+        <input type="password" asp-for="Password" class="form-control" style="width:auto" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <div class="d-flex align-items-center mt-3">
+        <label style="width:100px" class="me-1">Confirm password:</label>
+        <input type="password" asp-for="confirmPassword" class="form-control" style="width:auto" />
+        <span asp-validation-for="confirmPassword" class="text-danger"></span>
+    </div>
+    <input type="hidden" asp-for="Role" value="1" />
+    <button class="btn btn-success mt-3" type="submit">Register</button>
+    <a class="nav-link text-info" asp-area="" asp-controller="Blogs" asp-action="index">Back to Home</a>
+    <a class="nav-link text-info" asp-action="Login">Already have an account yet ? Login</a>
+</form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

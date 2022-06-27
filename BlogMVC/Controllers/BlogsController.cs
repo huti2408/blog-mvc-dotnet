@@ -42,6 +42,32 @@ namespace BlogMVC.Controllers
             var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
             return View(PagedList);
         }
+        public async Task<IActionResult> Home(string searchString, string blogCate, int? pageNumber)
+        {
+            IQueryable<string> cateQuery = from b in _context.Blogs orderby b.CategoryId select b.Category.name;
+            var blogs = from b in _context.Blogs select b;
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                blogs = blogs.Where(s => s.Title!.Contains(searchString));
+                pageNumber = 1;
+            }
+
+            if (!string.IsNullOrEmpty(blogCate))
+            {
+                blogs = blogs.Where(b => b.Category.name == blogCate);
+
+            }
+            int pageSize = 3;
+            var BlogCateVM = new BlogCategoryViewModel
+            {
+                categories = new SelectList(await cateQuery.Distinct().ToListAsync()),
+                blogs = await blogs.ToListAsync(),
+            };
+            var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
+            return View(PagedList);
+        }
+
 
         // GET: Blogs/Details/5
         public async Task<IActionResult> Details(long? id)
@@ -74,7 +100,7 @@ namespace BlogMVC.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("BlogID,Title,CreatedDate,content,ImageFile,CategoryId")] Blog blog)
+        public async Task<IActionResult> Create([Bind("BlogID,Title,CreatedDate,content,ImageFile,CategoryId,UserId")] Blog blog)
         {
 
             string wwwRootPath = _hostEnvironment.WebRootPath;

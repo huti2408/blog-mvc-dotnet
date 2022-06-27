@@ -35,7 +35,7 @@ namespace BlogMVC.Controllers
             }
 
             var user = await _context.Users
-                .FirstOrDefaultAsync(m => m.Id== id);
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
                 return NotFound();
@@ -55,7 +55,7 @@ namespace BlogMVC.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("UserID,Username,Password,confirmPassword,Name,Role")] User user)
+        public async Task<IActionResult> Create([Bind("Id,Username,Password,confirmPassword,Name,Role")] User user)
         {
             if (ModelState.IsValid)
             {
@@ -87,7 +87,7 @@ namespace BlogMVC.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(long id, [Bind("UserID,Username,Password,Name,Role")] User user)
+        public async Task<IActionResult> Edit(long id, [Bind("Id,Username,Password,Name,Role")] User user)
         {
             if (id != user.Id)
             {
@@ -153,7 +153,53 @@ namespace BlogMVC.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
+        public  IActionResult Login()
+        {
+            return View();
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Login(string username, string password)
+        {
+            if (ModelState.IsValid)
+            {
+                var userExisted = _context.Users.FirstOrDefault(u => u.Username == username && u.Password == password);
+                if(userExisted == null)
+                {
+                    ViewBag.error = "Login failed";
+                    return RedirectToAction("Login");
+                }
+                else
+                {
+                    HttpContext.Session.SetString("_NAME", userExisted.Name);
+                    HttpContext.Session.SetInt32("_USERID", (Int32)userExisted.Id);
+                    return RedirectToAction("index", "blogs");
+                }
+            }
+            return View();
+        }
+        public IActionResult Register()
+        {
+            return View();
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register([Bind("Id,Username,Password,confirmPassword,Name,Role")] User user)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(user);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Login");
+            }
+            return View(user);
+        }
+        [HttpPost]
+        public IActionResult LogOut()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
         private bool UserExists(long id)
         {
           return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();

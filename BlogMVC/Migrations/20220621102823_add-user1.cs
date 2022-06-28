@@ -13,7 +13,7 @@ namespace BlogMVC.Migrations
                 table: "Blogs",
                 type: "bigint",
                 nullable: true,
-                defaultValue:1);
+                defaultValue: 1);
 
             migrationBuilder.CreateTable(
                 name: "Users",

@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using BlogMVC.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using BlogMVC.Models;
 
 namespace BlogMVC.Controllers
 {
@@ -21,9 +16,15 @@ namespace BlogMVC.Controllers
         // GET: Categories
         public async Task<IActionResult> Index()
         {
-              return _context.Categories != null ? 
-                          View(await _context.Categories.ToListAsync()) :
-                          Problem("Entity set 'BlogContext.Categories'  is null.");
+            if (IsAdmin())
+            {
+                return _context.Categories != null ?
+                         View(await _context.Categories.ToListAsync()) :
+                         Problem("Entity set 'BlogContext.Categories'  is null.");
+
+            }
+            return RedirectToAction("Home", "Blogs");
+
         }
 
         // GET: Categories/Details/5
@@ -33,21 +34,32 @@ namespace BlogMVC.Controllers
             {
                 return NotFound();
             }
-
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (category == null)
+            if (IsAdmin())
             {
-                return NotFound();
-            }
+                var category = await _context.Categories
+                 .FirstOrDefaultAsync(m => m.Id == id);
+                if (category == null)
+                {
+                    return NotFound();
+                }
 
-            return View(category);
+                return View(category);
+
+            }
+            return RedirectToAction("Home", "Blogs");
+
         }
 
         // GET: Categories/Create
         public IActionResult Create()
         {
-            return View();
+            if (IsAdmin())
+            {
+
+                return View();
+
+            }
+            return RedirectToAction("Home", "Blogs");
         }
 
         // POST: Categories/Create
@@ -73,13 +85,18 @@ namespace BlogMVC.Controllers
             {
                 return NotFound();
             }
-
-            var category = await _context.Categories.FindAsync(id);
-            if (category == null)
+            if (IsAdmin())
             {
-                return NotFound();
+                var category = await _context.Categories.FindAsync(id);
+                if (category == null)
+                {
+                    return NotFound();
+                }
+                return View(category);
+
             }
-            return View(category);
+            return RedirectToAction("Home", "Blogs");
+
         }
 
         // POST: Categories/Edit/5
@@ -124,15 +141,20 @@ namespace BlogMVC.Controllers
             {
                 return NotFound();
             }
-
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (category == null)
+            if (IsAdmin())
             {
-                return NotFound();
-            }
+                var category = await _context.Categories
+                                .FirstOrDefaultAsync(m => m.Id == id);
+                if (category == null)
+                {
+                    return NotFound();
+                }
 
-            return View(category);
+                return View(category);
+
+            }
+            return RedirectToAction("Home", "Blogs");
+
         }
 
         // POST: Categories/Delete/5
@@ -149,14 +171,21 @@ namespace BlogMVC.Controllers
             {
                 _context.Categories.Remove(category);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
+        public bool IsAdmin()
+        {
+            if (HttpContext.Session.GetInt32("_ROLE") != 0)
+            {
+                return false;
+            }
+            return true;
+        }
         private bool CategoryExists(long id)
         {
-          return (_context.Categories?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Categories?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

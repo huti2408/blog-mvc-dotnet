@@ -14,57 +14,67 @@ namespace BlogMVC.Controllers
         {
             _context = context;
             this._hostEnvironment = hostEnvironment;
+
         }
 
         // GET: Blogs
         public async Task<IActionResult> Index(string searchString, string blogCate, int? pageNumber)
         {
-            IQueryable<string> cateQuery = from b in _context.Blogs orderby b.CategoryId select b.Category.name;
-            var blogs = from b in _context.Blogs select b;
-
-            if (!string.IsNullOrEmpty(searchString))
+            if (IsAdmin())
             {
-                blogs = blogs.Where(s => s.Title!.Contains(searchString));
-                pageNumber = 1;
+
+                IQueryable<string> cateQuery = from b in _context.Blogs orderby b.CategoryId select b.Category.name;
+                var blogs = from b in _context.Blogs orderby b.CreatedDate descending select b;
+
+                if (!string.IsNullOrEmpty(searchString))
+                {
+                    blogs = (IOrderedQueryable<Blog>)blogs.Where(s => s.Title!.Contains(searchString));
+                    pageNumber = 1;
+                }
+
+                if (!string.IsNullOrEmpty(blogCate))
+                {
+                    blogs = (IOrderedQueryable<Blog>)blogs.Where(b => b.Category.name == blogCate);
+
+                }
+                int pageSize = 3;
+                var BlogCateVM = new BlogCategoryViewModel
+                {
+                    categories = new SelectList(await cateQuery.Distinct().ToListAsync()),
+                    blogs = await blogs.ToListAsync(),
+                };
+                var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
+                return View(PagedList);
             }
+            return RedirectToAction("Home", "Blogs");
 
-            if (!string.IsNullOrEmpty(blogCate))
-            {
-                blogs = blogs.Where(b => b.Category.name == blogCate);
 
-            }
-            int pageSize = 3;
-            var BlogCateVM = new BlogCategoryViewModel
-            {
-                categories = new SelectList(await cateQuery.Distinct().ToListAsync()),
-                blogs = await blogs.ToListAsync(),
-            };
-            var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
-            return View(PagedList);
+
         }
         public async Task<IActionResult> Home(string searchString, string blogCate, int? pageNumber)
         {
             IQueryable<string> cateQuery = from b in _context.Blogs orderby b.CategoryId select b.Category.name;
-            var blogs = from b in _context.Blogs select b;
+            var blogs = from b in _context.Blogs orderby b.CreatedDate descending select b;
 
             if (!string.IsNullOrEmpty(searchString))
             {
-                blogs = blogs.Where(s => s.Title!.Contains(searchString));
+                blogs = (IOrderedQueryable<Blog>)blogs.Where(s => s.Title!.Contains(searchString));
                 pageNumber = 1;
             }
 
             if (!string.IsNullOrEmpty(blogCate))
             {
-                blogs = blogs.Where(b => b.Category.name == blogCate);
+                blogs = (IOrderedQueryable<Blog>)blogs.Where(b => b.Category.name == blogCate);
 
             }
             int pageSize = 3;
             var BlogCateVM = new BlogCategoryViewModel
             {
                 categories = new SelectList(await cateQuery.Distinct().ToListAsync()),
-                blogs = await blogs.ToListAsync(),
+                blogs = await blogs.Include(b => b.User).Include(b => b.Category).ToListAsync(),
             };
             var PagedList = PaginatedList<BlogCategoryViewModel>.CreateAsync(BlogCateVM, pageNumber ?? 1, pageSize);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "name");
             return View(PagedList);
         }
 
@@ -91,8 +101,14 @@ namespace BlogMVC.Controllers
         // GET: Blogs/Create
         public IActionResult Create()
         {
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "name");
-            return View();
+            if (IsAdmin())
+            {
+                ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "name");
+                return View();
+
+            }
+            return RedirectToAction("Home", "Blogs");
+
         }
 
         // POST: Blogs/Create
@@ -102,21 +118,25 @@ namespace BlogMVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("BlogID,Title,CreatedDate,content,ImageFile,CategoryId,UserId")] Blog blog)
         {
-
-            string wwwRootPath = _hostEnvironment.WebRootPath;
-            string fileName = Path.GetFileNameWithoutExtension(blog.ImageFile.FileName);
-            string extension = Path.GetExtension(blog.ImageFile.FileName);
-            blog.Image = fileName = fileName+ DateTime.Now.ToString("yymmss") + extension;
-            string path = Path.Combine(wwwRootPath+"/Image", fileName);
-            using(var fileStream = new FileStream(path, FileMode.Create))
+            if (string.IsNullOrEmpty(HttpContext.Session.GetInt32("_USERID").ToString()))
             {
-                await blog.ImageFile.CopyToAsync(fileStream);
-            }
-            _context.Add(blog);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+                string wwwRootPath = _hostEnvironment.WebRootPath;
+                string fileName = Path.GetFileNameWithoutExtension(blog.ImageFile.FileName);
+                string extension = Path.GetExtension(blog.ImageFile.FileName);
+                blog.Image = fileName = fileName + DateTime.Now.ToString("yymmss") + extension;
+                string path = Path.Combine(wwwRootPath + "/Image", fileName);
+                using (var fileStream = new FileStream(path, FileMode.Create))
+                {
+                    await blog.ImageFile.CopyToAsync(fileStream);
+                }
+                _context.Add(blog);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
 
-            
+            }
+            return RedirectToAction("Home", "Blogs");
+
+
         }
         [HttpPost]
         public async Task<IActionResult> UploadImage(IFormFile file)
@@ -217,7 +237,14 @@ namespace BlogMVC.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
+        public bool IsAdmin()
+        {
+            if (HttpContext.Session.GetInt32("_ROLE") != 0)
+            {
+                return false;
+            }
+            return true;
+        }
         private bool BlogExists(long id)
         {
             return (_context.Blogs?.Any(e => e.BlogID == id)).GetValueOrDefault();

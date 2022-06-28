@@ -4,6 +4,10 @@
     ViewData["Title"] = "HOME";
     Layout = "~/Views/Shared/Auth.cshtml";
 }
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    var session = HttpContextAccessor.HttpContext.Session;
+}
 
 <style>
     .img-post {
@@ -11,30 +15,35 @@
     }
 </style>
 <div asp-action="Login" class="d-flex flex-column align-items-center p-5 bg-light w-100" style="border-radius:5px; height:auto">
-<h1>Blogs</h1>
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<form asp-controller="Blogs" asp-action="Home" method="get" class="bg-white p-3">
-    <div class="d-flex justify-content-center align-items-center">
-        Category: <select class="p-1 me-2 ms-1" asp-for="blogCate" asp-items="Model.BlogCateVM.categories">
-            <option value="">All</option>
-        </select>
-        Title: <input class="p-1 me-2 ms-1"  type="text" name="SearchString" />
-        <input class="p-1" type="submit" value="Filter" />
-    </div>
-</form>
+    <h1>Blogs</h1>
+    @if (!string.IsNullOrEmpty(session.GetInt32("_USERID").ToString()))
+    { 
+        @await Html.PartialAsync("CreateBlog", Model.BlogCateVM.Blog)
+    }
     
+    <form asp-controller="Blogs" asp-action="Home" method="get" class="bg-white p-3">
+        <div class="d-flex justify-content-center align-items-center">
+            Category: <select class="p-1 me-2 ms-1" asp-for="blogCate" asp-items="Model.BlogCateVM.categories">
+                <option value="">All</option>
+            </select>
+            Title: <input class="p-1 me-2 ms-1" type="text" name="SearchString" />
+            <input class="p-1" type="submit" value="Filter" />
+        </div>
+    </form>
+
     <ul class="mt-4">
-        @foreach (var item in Model.BlogCateVM.blogs)
+        @*@for (int i = Model.BlogCateVM.blogs.Count - 1; i > 0; i--)
         {
+            
+            var item = Model.BlogCateVM.blogs[i];
             <li class="d-flex flex-column justify-content-center align-items-center mb-3 p-4" style="border:1px solid #ccc; border-radius:10px">
                 <div class="h2" style="margin-bottom:0;">
                     @Html.DisplayFor(modelItem => item.Title)
                 </div>
                 <div class=" text-info" style="font-size:14px;">
-                    @Html.DisplayFor(modelItem => item.CreatedDate)
+                    @Html.DisplayFor(modelItem => item.CreatedDate) - @Html.DisplayFor(modelItem => item.User.Name)
                 </div>
+                <p>@Html.DisplayFor(modelItem => item.Category.name)</p>
                 <div>
                     <img class="img-post m-3" src="@("~/image/"+item.Image)" asp-append-version="true">
                 </div>
@@ -44,24 +53,44 @@
 
 
             </li>
-        }
+        }*@
+        @foreach (var item in Model.BlogCateVM.blogs)
+        {
+            <li class="d-flex flex-column justify-content-center align-items-center mb-3 p-4" style="border:1px solid #ccc; border-radius:10px">
+                <div class="h2" style="margin-bottom:0;">
+                    @Html.DisplayFor(modelItem => item.Title)
+                </div>
+                <div class=" text-info" style="font-size:14px;">
+                    @Html.DisplayFor(modelItem => item.CreatedDate) - @Html.DisplayFor(modelItem => item.User.Name)
+                </div>
+                <p>@Html.DisplayFor(modelItem => item.Category.name)</p>
+                <div>
+                    <img class="img-post m-3" src="@("~/image/"+item.Image)" asp-append-version="true">
+                </div>
+                <div style="width:700px">
+                    @Html.DisplayFor(modelItem => item.content)
+                </div>
+
+
+            </li>
+       }
     </ul>
 
-@{
-    var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
-    var nextDisabled = !Model.HasNextPage ? "disabled" : "";
-}
+    @{
+        var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
+        var nextDisabled = !Model.HasNextPage ? "disabled" : "";
+    }
 
     <div class="d-flex justify-content-center align-items-center">
 
-<a asp-action="Home" asp-route-pageNumber="@(Model.PageIndex - 1)" class="btn btn-default @prevDisabled">Previous</a>
-<a asp-action="Home" asp-route-pageNumber="@(Model.PageIndex + 1)" class="btn btn-default @nextDisabled">Next</a>
+        <a asp-action="Home" asp-route-pageNumber="@(Model.PageIndex - 1)" class="btn btn-default @prevDisabled">Previous</a>
+        <a asp-action="Home" asp-route-pageNumber="@(Model.PageIndex + 1)" class="btn btn-default @nextDisabled">Next</a>
     </div>
 
 </div>
 
 
- 
 
 
- 
+
+

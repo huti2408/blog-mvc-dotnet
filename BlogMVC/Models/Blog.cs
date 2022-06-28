@@ -18,10 +18,10 @@ namespace BlogMVC.Models
         [DisplayName("Image Name:")]
         public string? Image { get; set; }
         [NotMapped]
-        [DisplayName("Upload File:")]
+        [DisplayName("Upload Image:")]
         public IFormFile? ImageFile { get; set; }
         public long CategoryId { get; set; }
-        public long UserId { get; set; } 
+        public long UserId { get; set; }
         public virtual Category Category { get; set; } = null!;
         public virtual User User { get; set; } = null!;
     }

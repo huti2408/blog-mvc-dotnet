@@ -1,0 +1,44 @@
+﻿@model BlogMVC.Models.Blog
+
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    var session = HttpContextAccessor.HttpContext.Session;
+}
+
+
+<form class="w-50 " asp-action="Create" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div>
+        <div class="form-group mt-4">
+            <input asp-for="Title" class="form-control" placeholder="Title" style="font-size:28px" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+        <div class="form-group mt-4 d-flex justify-content-center align-items-center">
+            <label class="control-label me-2">Category:</label>
+            <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId"></select>
+        </div>
+        <div class="form-group mt-4">
+            <textarea asp-for="content" class="form-control" placeholder="Content"></textarea>
+            <span asp-validation-for="content" class="text-danger"></span>
+
+        </div>
+        <div class="form-group mt-4">
+            <label asp-for="ImageFile" class="control-label"></label>
+            <input asp-for="ImageFile" accept="image/*" />
+            <span asp-validation-for="ImageFile" class="text-danger"></span>
+        </div>
+        <input type="hidden" asp-for="CreatedDate" value="@DateTime.Now.Date" />
+        <input type="hidden" asp-for="UserId" value="@session.GetInt32("_USERID")" />
+
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Create" class="btn btn-primary" />
+    </div>
+</form>
+
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
